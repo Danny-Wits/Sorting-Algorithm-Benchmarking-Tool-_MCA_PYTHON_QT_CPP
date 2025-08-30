@@ -11,7 +11,10 @@ It combines:
 The GUI and engine communicate via **command-line arguments** and **stdout parsing**.
 
 ---
+## Demo Screenshot
+<img width="795" height="830" alt="image" src="https://github.com/user-attachments/assets/de099d3d-8013-445a-8866-dec2c315f9aa" />
 
+---
 ## 🎯 Features
 
 - Sorting algorithms implemented in **C++**
