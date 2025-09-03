@@ -156,6 +156,11 @@ int main(int argc, char *argv[])
     auto result = Tester::test(algorithms, min, max, size);
     cout << Engine::map_to_string(result) << endl;
     auto resultFile = File("results.txt");
-    resultFile.write(Engine::map_to_string(result));
+
+    resultFile.append("\n___________________________________\n");
+    resultFile.append("\n" + to_string(min) + " " + to_string(max) + " " + to_string(size) + "\n");
+    resultFile.append(Engine::map_to_string(result));
+    resultFile.append("\n___________________________________\n");
+
     return 0;
 }

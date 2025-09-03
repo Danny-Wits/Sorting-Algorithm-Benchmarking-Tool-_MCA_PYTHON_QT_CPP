@@ -15,7 +15,7 @@ public:
     File(string path)
     {
         this->path = path;
-        FILE *file = fopen(path.c_str(), "w");
+        FILE *file = fopen(path.c_str(), "a");
         if (file == NULL)
         {
             cout << "Error opening file" << endl;
