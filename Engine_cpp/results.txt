@@ -1,0 +1,12 @@
+
+___________________________________
+
+0 100 1000
+BubbleSort : 14ms
+InsertionSort : 2ms
+MergeSort : 1ms
+OptimizedBubbleSort : 13ms
+QuickSort : 1ms
+SelectionSort : 5ms
+
+___________________________________

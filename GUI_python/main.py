@@ -111,8 +111,8 @@ class MainWindow(QMainWindow):
         self.chartView.setRenderHint(QPainter.Antialiasing)
 
         #! progress bar
-        self.progress = QProgressBar()
-        self.progress.setMinimumHeight(40)
+        self.progress = QProgressBar(self)
+        self.progress.setMinimumSize(200, 30)
         self.progress.setRange(0, 0)
         self.progress.setRange(0, 100)
         self.progress.setValue(0)
@@ -124,7 +124,6 @@ class MainWindow(QMainWindow):
                     text-align: center;
                     background: #2b2b2b;
                     color: white;
-                    height: 50px;
                 }
                 QProgressBar::chunk {
                     background-color: #00bcd4;
@@ -190,6 +189,7 @@ class MainWindow(QMainWindow):
 
 #! helper functions
 
+
     def get_selected(self):
         selected = []
         for i in range(self.select.count()):
@@ -200,7 +200,6 @@ class MainWindow(QMainWindow):
 
 
 ##! process functions
-
 
     def run(self):
         print("running")
