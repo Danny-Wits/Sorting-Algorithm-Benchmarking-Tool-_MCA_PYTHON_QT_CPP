@@ -124,7 +124,7 @@ class MainWindow(QMainWindow):
                     text-align: center;
                     background: #2b2b2b;
                     color: white;
-                    height: 18px;
+                    height: 50px;
                 }
                 QProgressBar::chunk {
                     background-color: #00bcd4;
