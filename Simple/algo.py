@@ -1,17 +1,16 @@
-from abc import ABC, abstractmethod
+import random
 
-class SortingAlgorithm(ABC):
-    def __init__(self, name):
-        self.name = name
-
-    @abstractmethod
-    def sort(self, arr):
-        pass
+ALGORITHMS = ["All", "BubbleSort", "InsertionSort",
+              "MergeSort", "QuickSort", "SelectionSort"]
 
 
-class BubbleSort(SortingAlgorithm):
+def random_array(size):
+    return [random.randint(1, 100) for i in range(size)]
+
+
+class BubbleSort:
     def __init__(self):
-        super().__init__("BubbleSort")
+        self.name = "BubbleSort"
 
     def sort(self, arr):
         for i in range(len(arr) - 1):
@@ -20,24 +19,9 @@ class BubbleSort(SortingAlgorithm):
                     arr[j], arr[j + 1] = arr[j + 1], arr[j]
 
 
-class OptimizedBubbleSort(SortingAlgorithm):
+class InsertionSort:
     def __init__(self):
-        super().__init__("OptimizedBubbleSort")
-
-    def sort(self, arr):
-        for i in range(len(arr) - 1):
-            swapped = False
-            for j in range(len(arr) - i - 1):
-                if arr[j] > arr[j + 1]:
-                    arr[j], arr[j + 1] = arr[j + 1], arr[j]
-                    swapped = True
-            if not swapped:
-                break
-
-
-class InsertionSort(SortingAlgorithm):
-    def __init__(self):
-        super().__init__("InsertionSort")
+        self.name = "InsertionSort"
 
     def sort(self, arr):
         for i in range(1, len(arr)):
@@ -49,9 +33,9 @@ class InsertionSort(SortingAlgorithm):
             arr[j + 1] = key
 
 
-class SelectionSort(SortingAlgorithm):
+class SelectionSort:
     def __init__(self):
-        super().__init__("SelectionSort")
+        self.name = "SelectionSort"
 
     def sort(self, arr):
         for i in range(len(arr) - 1):
@@ -62,9 +46,9 @@ class SelectionSort(SortingAlgorithm):
             arr[i], arr[min_idx] = arr[min_idx], arr[i]
 
 
-class MergeSort(SortingAlgorithm):
+class MergeSort:
     def __init__(self):
-        super().__init__("MergeSort")
+        self.name = "MergeSort"
 
     def sort(self, arr):
         if len(arr) <= 1:
@@ -96,9 +80,9 @@ class MergeSort(SortingAlgorithm):
             k += 1
 
 
-class QuickSort(SortingAlgorithm):
+class QuickSort:
     def __init__(self):
-        super().__init__("QuickSort")
+        self.name = "QuickSort"
 
     def sort(self, arr):
         self.quick_sort(arr, 0, len(arr) - 1)
@@ -118,4 +102,3 @@ class QuickSort(SortingAlgorithm):
                 arr[i], arr[j] = arr[j], arr[i]
         arr[i + 1], arr[high] = arr[high], arr[i + 1]
         return i + 1
-

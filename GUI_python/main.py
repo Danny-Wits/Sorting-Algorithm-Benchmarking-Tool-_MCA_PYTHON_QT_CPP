@@ -363,7 +363,7 @@ class MainWindow(QMainWindow):
 
         # X Axis (categories = algorithm names)
         axisX = QBarCategoryAxis()
-        axisX.append(["Test"])
+        axisX.append(["Algorithms"])
         self.chart.addAxis(axisX, Qt.AlignBottom)
         series.attachAxis(axisX)
 

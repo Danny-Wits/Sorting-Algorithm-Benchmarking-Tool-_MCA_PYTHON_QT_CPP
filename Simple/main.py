@@ -1,340 +1,188 @@
-from PySide6.QtWidgets import *
-from PySide6.QtGui import *
-from PySide6.QtCharts import *
-from PySide6.QtCore import *
-import sys
-from const import *
-from collections import defaultdict
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+import algo
+import time
 
 
-class MainWindow(QMainWindow):
+class App(Tk):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Sorter")
-        self.setGeometry(0, 0, 1000, 1000)
-        self.setWindowIcon(QIcon("./GUI_python/icon.png"))
-        self.result = []
-        self.count = 0
-        #! mode selector
-        self.mode = "Comparison"
-        self.mode_label = QLabel("Select a mode", self)
-        self.select_mode = QComboBox()
-        self.select_mode.addItems(MODE)
-        self.select_mode.currentIndexChanged.connect(self.mode_changed)
+        self.title("Sorting Benchmark")
+        self.geometry("1400x800")
+        self.sorting_algorithm = "All"
+        self.create_widgets()
+        self.state("zoomed")
+        self.style = ttk.Style()
+        self.style.theme_use("xpnative")
 
-        self.init_UI()
+    def create_widgets(self):
+        self.algorithms = algo.ALGORITHMS
+        self.algorithm_var = StringVar(self)
+        self.algorithm_var.set(self.algorithms[0])
+        self.algorithm_menu = ttk.Combobox(
+            self, textvariable=self.algorithm_var, values=self.algorithms)
+        self.algorithm_menu.pack(pady=10)
+        self.algorithm_menu.bind("<<ComboboxSelected>>", self.select_algorithm)
 
-    def init_UI(self):
+        self.size_var = StringVar(self)
+        self.size_var.set("50")
+        self.size_entry = ttk.Entry(self, textvariable=self.size_var)
+        self.size_entry.pack(pady=10)
 
-        centre = QWidget()
-        self.setCentralWidget(centre)
+        buttons_frame = ttk.Frame(self, borderwidth=2, relief="groove")
+        buttons_frame.pack(padx=10, pady=10)
 
-        #! title
-        label = QLabel("Sorting Algorithm Tester", self)
-        label.setFont(QFont("Arial", 24))
-        label.setAlignment(Qt.AlignCenter)
-        label.setStyleSheet("padding:20px;")
+        self.generate_button = ttk.Button(
+            buttons_frame, text="Generate", command=self.generate)
+        self.generate_button.pack(side=LEFT, padx=10, pady=10)
 
-        #! setting parameters (min, max , size)
-        l_min = QLabel("Min", self)
-        l_min.setFont(QFont("Arial", 15))
-        l_min.setAlignment(Qt.AlignCenter)
+        self.sort_button = ttk.Button(
+            buttons_frame, text="Sort", command=self.sort)
+        self.sort_button.pack(side=LEFT, padx=10, pady=10)
 
-        l_max = QLabel("Max", self)
-        l_max.setFont(QFont("Arial", 15))
-        l_max.setAlignment(Qt.AlignCenter)
+        self.reset_button = ttk.Button(
+            buttons_frame, text="Reset", command=self.reset)
+        self.reset_button.pack(side=LEFT, padx=10, pady=10)
 
-        l_size = QLabel("Size", self)
-        l_size.setFont(QFont("Arial", 15))
-        l_size.setAlignment(Qt.AlignCenter)
-
-        self.min = QSpinBox()
-        self.min.setFont(QFont("Arial", 15))
-        self.min.setMinimum(0)
-        self.min.setMaximum(100)
-
-        self.max = QSpinBox()
-        self.max.setFont(QFont("Arial", 15))
-        self.max.setMinimum(0)
-        self.max.setMaximum(1000)
-        self.max.setValue(100)
-
-        if (self.mode == "Time"):
-            self._size = QTextEdit()
-            self._size.setFont(QFont("Arial", 15))
-            self._size.setMaximumSize(300, 30)
-            self._size.setText(DEFAULT_SIZES)
-        else:
-            self._size = QSpinBox()
-            self._size.setFont(QFont("Arial", 15))
-            self._size.setMinimum(1000)
-            self._size.setMaximum(50000)
-            self._size.setValue(10000)
-        #! select algorithm
-        l2 = QLabel("Select a sorting algorithm", self)
-        l2.setFont(QFont("Arial", 12))
-        l2.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self.select = QListWidget()
-        self.select.setFont(QFont("Arial", 15))
-        self.select.setMaximumHeight(180)
-        for algo in ALGORITHMS:
-            item = QListWidgetItem(algo)
-            item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
-            item.setCheckState(Qt.CheckState.Checked)
-            self.select.addItem(item)
-
-        #! run
-        self.button = QPushButton("Run", self)
-        self.button.setFont(QFont("Arial", 15))
-        self.button.clicked.connect(self.run)
-
-        #! Terminal
-        self.terminal = QTextEdit()
-        self.terminal.setReadOnly(True)
-        self.terminal.setMaximumWidth(300)
-        self.terminal.setFont(QFont("Arial", 12))
-        self.terminal.setStyleSheet(
-            "border: 1px solid black; border-radius: 5px; padding: 5px;"
+        self.progress_bar = ttk.Progressbar(
+            self,
+            orient=HORIZONTAL,
+            length=600,
+            mode="determinate")
+        self.progress_bar.pack(
+            padx=10,
+            pady=10
         )
-        #!Charts
-        self.chart = QChart()
-        self.chart.setTheme(QChart.ChartThemeDark)
-        self.chartView = ZoomPanChartView(self.chart)
-        self.chartView.setMinimumHeight(400)
-        self.chartView.setRenderHint(QPainter.Antialiasing)
 
-        #! progress bar
-        self.progress = QProgressBar()
-        self.progress.setMinimumHeight(40)
-        self.progress.setRange(0, 0)
-        self.progress.setRange(0, 100)
-        self.progress.setValue(0)
-        self.progress.hide()
-        self.progress.setStyleSheet("""
-                QProgressBar {
-                    border: 2px solid #555;
-                    border-radius: 8px;
-                    text-align: center;
-                    background: #2b2b2b;
-                    color: white;
-                    height: 18px;
-                }
-                QProgressBar::chunk {
-                    background-color: #00bcd4;
-                    width: 20px;
-                    margin: 1px;
-                }
-                """)
+        self.canvas = Canvas(self, width=1400, height=600, bg="white")
+        self.canvas.pack(pady=10)
 
-        #! layout
-        vbox = QVBoxLayout()
-        vbox.setContentsMargins(50, 50, 50, 50)
-        vbox.setAlignment(Qt.AlignmentFlag.AlignTop)
-        vbox.setSpacing(10)
-        vbox.addWidget(label)
-        vbox.addWidget(self.mode_label)
-        vbox.addWidget(self.select_mode)
+    def draw(self, sorted=False):
+        self.canvas.delete("all")
+        if self.arr == None:
+            return False
+        if len(self.arr) > 300:
+            self.canvas.create_text(
+                self.canvas.winfo_width()/2,
+                self.canvas.winfo_height() / 2,
+                anchor="center",
+                text=f"{len(self.arr)} elements are too many to visualize. But you can still sort them.",
+                font=("Arial", 16))
+            return False
 
-        hbox = QHBoxLayout()
-        hbox.setContentsMargins(0, 0, 0, 20)
-        hbox.setAlignment(Qt.AlignCenter)
-        hbox.addWidget(l_min)
-        hbox.addWidget(self.min)
-        hbox.addWidget(l_max)
-        hbox.addWidget(self.max)
-        hbox.addWidget(l_size)
-        hbox.addWidget(self._size)
+        arr = self.arr
 
-        vbox.addLayout(hbox)
-        vbox.addWidget(l2)
-        vbox.addWidget(self.select)
-        vbox.addWidget(self.button)
+        canvas_height = 600
+        canvas_width = 1400
+        x_width = canvas_width / (len(arr) + 1)
+        offset = 10
+        spacing = 5
+        normalized_arr = [i / max(arr) for i in arr]
+        for i, height in enumerate(normalized_arr):
+            x0 = i * x_width + offset + spacing
+            y0 = canvas_height - height * 380
+            x1 = (i + 1) * x_width + offset
+            y1 = canvas_height
+            self.canvas.create_rectangle(
+                x0, y0, x1, y1, fill="green" if sorted else "blue")
+            if len(arr) <= 100:
+                self.canvas.create_text(
+                    x0 + x_width / 2,
+                    y0 - 10,
+                    text=str(arr[i]),
+                    fill="black",
+                    font=("Arial", 8),
+                )
+            self.update()
+            time.sleep(0.01 if sorted else 0.001)
+        return True
 
-        hbox2 = QHBoxLayout()
-        hbox2.addWidget(self.terminal)
-        hbox2.addWidget(self.chartView)
-        vbox.addLayout(hbox2)
-        centre.setLayout(vbox)
+    def select_algorithm(self, event=None):
+        selected_algorithm = self.algorithm_var.get()
+        self.set_algo_from_name(selected_algorithm)
 
-    def mode_changed(self, i):
-        self.mode = self.select_mode.currentText()
-        self.init_UI()
-
-    def get_selected(self):
-        selected = []
-        for i in range(self.select.count()):
-            item = self.select.item(i)
-            if item.checkState() == Qt.Checked:
-                selected.append(item.text())
-        return selected
-
-    def run(self):
-        print("running")
-        self.button.setDisabled(True)
-        if (self.mode == "Time"):
-            self.sizes = [int(s.strip())
-                          for s in self._size.toPlainText().split(",") if s != ""]
-            self.progress.setValue(0)
-            self.progress.show()
-            i = 0
-            for size in self.sizes:
-                i += 1
-                self.run_engine_time(self.min.value(), self.max.value(),
-                                     size, self.get_selected())
+    def set_algo_from_name(self, selected_algorithm):
+        if selected_algorithm == "All":
+            self.sorting_algorithm = "All"
+        elif selected_algorithm == "BubbleSort":
+            self.sorting_algorithm = algo.BubbleSort()
+        elif selected_algorithm == "SelectionSort":
+            self.sorting_algorithm = algo.SelectionSort()
+        elif selected_algorithm == "InsertionSort":
+            self.sorting_algorithm = algo.InsertionSort()
+        elif selected_algorithm == "MergeSort":
+            self.sorting_algorithm = algo.MergeSort()
+        elif selected_algorithm == "QuickSort":
+            self.sorting_algorithm = algo.QuickSort()
         else:
+            self.sorting_algorithm = None
 
-            self.run_engine(self.min.value(), self.max.value(),
-                            self._size.value(), self.get_selected())
+    def generate(self):
+        size = int(self.size_var.get())
+        self.arr = algo.random_array(size)
+        self.draw()
 
-    def run_engine_time(self, min, max, size, algo_list):
-        process = QProcess()
-        process.readyReadStandardOutput.connect(
-            lambda: self.process_output(process))
-        process.finished.connect(lambda: self.process_finished(size))
-        process.start(ENGINE_PATH, [str(min), str(max), str(size), *algo_list])
+    def sort(self):
+        if self.sorting_algorithm is None:
+            messagebox.showinfo("Error", "Please select an algorithm.")
+            return
+        sorting_info = {}
+        self.progress_bar["maximum"] = len(algo.ALGORITHMS)-1
+        self.progress_bar["value"] = 0
+        if (self.sorting_algorithm == "All"):
 
-    def run_engine(self, min, max, size, algo_list):
-        self.process = QProcess()
-        self.process.readyReadStandardOutput.connect(
-            lambda: self.process_output(self.process))
-        self.process.finished.connect(self.process_finished)
-        self.process.start(ENGINE_PATH, [str(min), str(max), str(
-            size), *algo_list])
-        self.progress.setValue(0)
-        self.progress.show()
+            for algorithm in algo.ALGORITHMS:
+                if algorithm == "All":
+                    continue
+                self.set_algo_from_name(algorithm)
+                algo_name, time_taken = self.get_sorting_info(
+                    self.arr.copy() if algorithm != "QuickSort" else None)
+                sorting_info[algo_name] = time_taken
+                self.progress_bar["value"] += 1
+                self.update()
 
-    def process_output(self, process):
-        output = process.readAllStandardOutput().data().decode("utf-8")
-        if (output.strip().startswith("PROGRESS") and self.mode == "Comparison"):
-            self.progress.setValue(
-                int((output.strip().split(" : ")[1]).split("\n")[0]))
-            print(output.strip("PROGRESS : 100\n"))
-        self.terminal.setText(output.strip("PROGRESS : 100\n"))
-
-    def process_finished(self, size=0):
-        if (self.mode == "Time"):
-            result = self.parse_results(self.terminal.toPlainText())
-            for r in result:
-                self.result.append(
-                    {"name": r, "size": size, "time": result[r]})
-            self.count += 1
-            self.progress.setValue((self.count / len(self.sizes))*100)
-            if (self.count == len(self.sizes)):
-                self.terminal.setText("")
-                total_time = {}
-                for r in self.result:
-                    if r["name"] not in total_time:
-                        total_time[r["name"]] = 0
-                    total_time[r["name"]] += r["time"]
-                total_time = dict(sorted(total_time.items(),
-                                         key=lambda x: x[1]))
-                for t in total_time:
-                    self.terminal.setText(self.terminal.toPlainText(
-                    ) + t + " : " + str(total_time[t]) + "ms\n")
-
-                self.progress.hide()
-                self.button.setDisabled(False)
-                self.set_chart_time(self.result)
-                self.result = []
-                self.count = 0
+            self.sorting_algorithm = "All"
         else:
-            self.button.setDisabled(False)
-            self.set_chart_comparison(
-                self.parse_results(self.terminal.toPlainText()))
-            self.progress.hide()
+            algo_name, time_taken = self.get_sorting_info()
+            sorting_info[algo_name] = time_taken
+            self.progress_bar["value"] = len(algo.ALGORITHMS)-1
+        self.draw(True)
+        self.show_sorting_info(sorting_info)
 
-    def parse_results(self, output):
-        results = {}
-        for line in output.split("\n"):
-            if (":" not in line):
-                continue
-            algo, time = line.split(" : ")
-            results[algo] = int(time.split("ms")[0])
-        if ("PROGRESS" in results):
-            results.pop("PROGRESS")
-        return results
+    def get_sorting_info(self, arr=None):
+        if arr is None:
+            arr = self.arr
+        start = time.perf_counter()
+        self.sorting_algorithm.sort(arr)
+        end = time.perf_counter()
+        time_taken = end - start
+        return self.sorting_algorithm.name, round(time_taken, 4)
 
-    def set_chart_time(self, results):
-        self.chart.removeAllSeries()
-        for axis in self.chart.axes():
-            self.chart.removeAxis(axis)
+    def show_sorting_info(self, sorting_info):
+        self.canvas.create_text(
+            10,
+            10,
+            text=self.dict_to_string(self.sort_dict(sorting_info)),
+            fill="black",
+            anchor="nw",
+            font=("Arial", 14),
+        )
+        self.update()
 
-        # Group results by algorithm name
-        grouped = defaultdict(list)
-        for entry in results:
-            grouped[entry["name"]].append(entry)
+    def reset(self):
+        self.canvas.delete("all")
+        self.sorting_algorithm = None
+        self.arr = None
+        self.draw()
 
-        # Add one QLineSeries per algorithm
-        all_x, all_y = [], []
-        for name, values in grouped.items():
-            # sort by input size
-            values = sorted(values, key=lambda x: x["size"])
-            series = QLineSeries()
-            series.setName(name)
-            for v in values:
-                series.append(v["size"], v["time"])
-                all_x.append(v["size"])
-                all_y.append(v["time"])
-            self.chart.addSeries(series)
+    def sort_dict(self, dictionary):
+        return dict(sorted(dictionary.items(), key=lambda item: item[1]))
 
-        self.chart.setTitle("Sorting Algorithm Runtimes (ms)")
-        self.chart.setAnimationOptions(QChart.SeriesAnimations)
-
-        # X Axis (Input Size)
-        axisX = QValueAxis()
-        axisX.setTitleText("Input Size")
-        axisX.setLabelFormat("%d")
-        axisX.setRange(min(all_x), max(all_x))
-        self.chart.addAxis(axisX, Qt.AlignBottom)
-
-        # Y Axis (Runtime)
-        axisY = QValueAxis()
-        axisY.setTitleText("Runtime (ms)")
-        axisY.setLabelFormat("%d")
-        axisY.setRange(0, max(all_y))
-        self.chart.addAxis(axisY, Qt.AlignLeft)
-
-        # Attach all series to both axes
-        for series in self.chart.series():
-            series.attachAxis(axisX)
-            series.attachAxis(axisY)
-
-    def set_chart_comparison(self, results):
-        self.chart.removeAllSeries()
-        for axis in self.chart.axes():
-            self.chart.removeAxis(axis)
-
-        series = QBarSeries()
-
-        bars = []
-        for algo, value in results.items():
-            bar_set = QBarSet(algo)
-            bar_set.append(value)
-            bars.append(bar_set)
-        series.append(bars)
-        self.chart.addSeries(series)
-        self.chart.setTitle("Sorting Algorithm Runtime (ms)")
-        self.chart.setAnimationOptions(QChart.SeriesAnimations)
-
-        # X Axis (categories = algorithm names)
-        axisX = QBarCategoryAxis()
-        axisX.append(["Test"])
-        self.chart.addAxis(axisX, Qt.AlignBottom)
-        series.attachAxis(axisX)
-
-        # Y Axis
-        axisY = QValueAxis()
-        axisY.setTitleText("Runtime (ms)")
-        self.chart.addAxis(axisY, Qt.AlignLeft)
-        series.attachAxis(axisY)
-
-
-def main():
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.showMaximized()
-    sys.exit(app.exec())
+    def dict_to_string(self, dictionary):
+        return "\n".join([f"{key:19}{value}ms" for key, value in dictionary.items()])
 
 
 if __name__ == "__main__":
-    main()
+    app = App()
+    app.mainloop()
