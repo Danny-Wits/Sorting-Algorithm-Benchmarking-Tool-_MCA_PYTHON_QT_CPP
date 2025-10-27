@@ -3,4 +3,7 @@
 .vscode
 tempCodeRunnerFile.cpp
 tempCodeRunnerFile.py
+test.py
 !results.txt
+~$nopsis.docx
+*.tmp
