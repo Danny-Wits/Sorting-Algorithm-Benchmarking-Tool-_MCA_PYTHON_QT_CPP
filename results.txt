@@ -5563,3 +5563,15 @@ MergeSort : 15ms
 QuickSort : 81ms
 
 ___________________________________
+
+___________________________________
+
+0 100 10000
+BubbleSort : 947ms
+InsertionSort : 332ms
+MergeSort : 29ms
+OptimizedBubbleSort : 920ms
+QuickSort : 6ms
+SelectionSort : 394ms
+
+___________________________________
