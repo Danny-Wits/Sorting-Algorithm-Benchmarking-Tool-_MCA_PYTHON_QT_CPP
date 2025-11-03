@@ -11,6 +11,7 @@ class App(Tk):
         self.title("Sorting Benchmark")
         self.geometry("1400x800")
         self.sorting_algorithm = "All"
+        self.sorting_info = {}  # store results for graph
         self.create_widgets()
         self.state("zoomed")
         self.style = ttk.Style()
@@ -41,6 +42,10 @@ class App(Tk):
             buttons_frame, text="Sort", command=self.sort)
         self.sort_button.pack(side=LEFT, padx=10, pady=10)
 
+        self.graph_button = ttk.Button(
+            buttons_frame, text="Graph", command=self.show_graph)
+        self.graph_button.pack(side=LEFT, padx=10, pady=10)
+
         self.reset_button = ttk.Button(
             buttons_frame, text="Reset", command=self.reset)
         self.reset_button.pack(side=LEFT, padx=10, pady=10)
@@ -50,17 +55,14 @@ class App(Tk):
             orient=HORIZONTAL,
             length=600,
             mode="determinate")
-        self.progress_bar.pack(
-            padx=10,
-            pady=10
-        )
+        self.progress_bar.pack(padx=10, pady=10)
 
         self.canvas = Canvas(self, width=1400, height=600, bg="white")
         self.canvas.pack(pady=10)
 
     def draw(self, sorted=False):
         self.canvas.delete("all")
-        if self.arr == None:
+        if self.arr is None:
             return False
         if len(self.arr) > 300:
             self.canvas.create_text(
@@ -72,7 +74,6 @@ class App(Tk):
             return False
 
         arr = self.arr
-
         canvas_height = 600
         canvas_width = 1400
         x_width = canvas_width / (len(arr) + 1)
@@ -130,8 +131,7 @@ class App(Tk):
         sorting_info = {}
         self.progress_bar["maximum"] = len(algo.ALGORITHMS)-1
         self.progress_bar["value"] = 0
-        if (self.sorting_algorithm == "All"):
-
+        if self.sorting_algorithm == "All":
             for algorithm in algo.ALGORITHMS:
                 if algorithm == "All":
                     continue
@@ -147,6 +147,8 @@ class App(Tk):
             algo_name, time_taken = self.get_sorting_info()
             sorting_info[algo_name] = time_taken
             self.progress_bar["value"] = len(algo.ALGORITHMS)-1
+
+        self.sorting_info = sorting_info  # store for graph
         self.draw(True)
         self.show_sorting_info(sorting_info)
 
@@ -156,8 +158,8 @@ class App(Tk):
         start = time.perf_counter()
         self.sorting_algorithm.sort(arr)
         end = time.perf_counter()
-        time_taken = end - start
-        return self.sorting_algorithm.name, round(time_taken, 4)
+        time_taken = (end - start) * 1000  # convert to ms
+        return self.sorting_algorithm.name, round(time_taken, 2)
 
     def show_sorting_info(self, sorting_info):
         self.canvas.create_text(
@@ -170,17 +172,68 @@ class App(Tk):
         )
         self.update()
 
+    def show_graph(self):
+        """Draw a performance graph of the sorting results."""
+        if not self.sorting_info:
+            messagebox.showinfo("Info", "Please sort first to generate data.")
+            return
+
+        self.canvas.delete("all")
+
+        data = self.sort_dict(self.sorting_info)
+        algorithms = list(data.keys())
+        times = list(data.values())
+
+        # Graph settings
+        canvas_width = 1400
+        canvas_height = 600
+        bar_width = (canvas_width - 200) / len(algorithms)
+        max_time = max(times)
+        scale = (canvas_height - 100) / max_time
+
+        for i, algo_name in enumerate(algorithms):
+            x0 = 100 + i * bar_width
+            y0 = canvas_height - (times[i] * scale)
+            x1 = x0 + bar_width * 0.7
+            y1 = canvas_height - 50
+            self.canvas.create_rectangle(
+                x0, y0, x1, y1, fill="skyblue", outline="black")
+            self.canvas.create_text(
+                (x0 + x1) / 2,
+                y0 - 15,
+                text=f"{times[i]} ms",
+                font=("Arial", 10),
+                fill="black",
+            )
+            self.canvas.create_text(
+                (x0 + x1) / 2,
+                canvas_height - 25,
+                text=algo_name,
+                font=("Arial", 10),
+                fill="black",
+                angle=45,
+            )
+
+        self.canvas.create_text(
+            canvas_width / 2,
+            30,
+            text="Sorting Algorithm Performance",
+            font=("Arial", 20, "bold"),
+            fill="black",
+        )
+
     def reset(self):
         self.canvas.delete("all")
         self.sorting_algorithm = None
         self.arr = None
+        self.sorting_info = {}
         self.draw()
 
     def sort_dict(self, dictionary):
         return dict(sorted(dictionary.items(), key=lambda item: item[1]))
 
     def dict_to_string(self, dictionary):
-        return "\n".join([f"{key:19}{value}ms" for key, value in dictionary.items()])
+        return "\n".join([f"{key:19}{value} ms" for key, value in dictionary.items()])
 
 
 if __name__ == "__main__":
