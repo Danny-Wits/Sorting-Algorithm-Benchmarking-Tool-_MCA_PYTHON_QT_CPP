@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     vector<SortingAlgorithm *> algorithms;
     for (int i = 4; i < argc; i++)
     {
-        auto temp = getAlgorithm(argv[i]);
+        SortingAlgorithm *temp = getAlgorithm(argv[i]);
         if (temp != nullptr)
         {
             algorithms.push_back(temp);
